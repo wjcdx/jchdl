@@ -1,0 +1,9 @@
+With some domain-speicific constraints, we can convert system and algorithm level 
+designs in plain java language codes into a Verilog version.
+
+Constraints:
+1. Handling with Bits/Bytes(only boolean/char/short/int types);
+2. NO float/double types;
+3. NO raising exceptions;
+4. Variables should be set at only one place.
+
