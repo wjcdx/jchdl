@@ -27,8 +27,6 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.core.meta;
 
-import org.jchdl.model.annotation.ModelRef;
-
 public abstract class AtomicNode extends Node {
 
     // make this method final, to stop override by sub-classes.
@@ -42,7 +40,6 @@ public abstract class AtomicNode extends Node {
     public abstract void atomic();
 
     // atomic nodes should be a verilog primitive
-    @ModelRef
     public abstract String primitive();
 
     @Override

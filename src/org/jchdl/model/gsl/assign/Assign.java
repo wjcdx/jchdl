@@ -27,14 +27,12 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.assign;
 
-import org.jchdl.model.annotation.ModelRef;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
 import org.jchdl.model.gsl.core.meta.Node;
 
 // There's only continuous assignment for wires.
 // Node input connects directly to its output can not be translated correctly.
 // Use this Assign node as a replacement.
-@ModelRef
 public class Assign extends Node {
     private Assign(Wire out, Wire in) {
         in(in);

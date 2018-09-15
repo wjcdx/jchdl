@@ -27,7 +27,6 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.core.datatype.net;
 
-import org.jchdl.model.annotation.ModelRef;
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.gate.pull.PullDown;
 import org.jchdl.model.gsl.core.gate.pull.PullUp;
@@ -64,7 +63,6 @@ public class Wire extends Net implements Assignable {
         this.connect(output);
     }
 
-    @ModelRef
     public Wire(WireVec vec) {
         this.vec = vec;
     }
@@ -127,12 +125,10 @@ public class Wire extends Net implements Assignable {
         this.seq = seq;
     }
 
-    @ModelRef
     public Input getInput() {
         return in;
     }
 
-    @ModelRef
     public Output getOutput() {
         return out;
     }

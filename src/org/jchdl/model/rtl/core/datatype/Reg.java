@@ -27,7 +27,6 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.rtl.core.datatype;
 
-import org.jchdl.model.annotation.ModelRef;
 import org.jchdl.model.rtl.core.datatype.helper.BitVec;
 import org.jchdl.model.rtl.core.meta.Bitable;
 
@@ -123,7 +122,6 @@ public class Reg extends BitVec {
         return new Reg(new Bit[]{bit});
     }
 
-    @ModelRef
     public static Reg to(Bits bits) {
         return new Reg(bits.bits());
     }

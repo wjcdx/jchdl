@@ -27,7 +27,6 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.core.meta;
 
-import org.jchdl.model.annotation.ModelRef;
 import org.jchdl.vc.gsl.GslVerilogConverter;
 import org.jchdl.model.gsl.core.io.Input;
 import org.jchdl.model.gsl.core.io.Output;
@@ -160,12 +159,10 @@ public abstract class Node implements Propagatable {
         this.name = name;
     }
 
-    @ModelRef
     public Input[] getInputs() {
         return ioI;
     }
 
-    @ModelRef
     public Output[] getOutputs() {
         return ioO;
     }

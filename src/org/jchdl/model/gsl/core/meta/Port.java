@@ -27,7 +27,6 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.core.meta;
 
-import org.jchdl.model.annotation.ModelRef;
 import org.jchdl.model.gsl.core.value.Value;
 
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import java.util.ArrayList;
 // Note: One output port can driver multiple input ports.
 public abstract class Port implements Propagatable {
     public Value value = new Value(Value.VALUE_X);
-
     private Port upstream;
     private ArrayList<Port> downstreams = new ArrayList<>(16);
     protected Propagatable owner;
@@ -44,22 +42,18 @@ public abstract class Port implements Propagatable {
         this.owner = owner;
     }
 
-    @ModelRef
     public Propagatable getOwner() {
         return owner;
     }
 
-    @ModelRef
     public Port getDownstream(int i) {
         return downstreams.get(i);
     }
 
-    @ModelRef
     public ArrayList<Port> getDownstreams() {
         return downstreams;
     }
 
-    @ModelRef
     public Port getUpstream() {
         return upstream;
     }
