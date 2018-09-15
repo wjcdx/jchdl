@@ -58,20 +58,27 @@ public class Mux extends Module {
 
     @Override
     public void logic() {
-        assign(out).from(a, b).with(this::assignO);
+        assign(out).from(a, b, sel).with(this::assignO);
     }
 
     public static void main(String[] args) {
         Bit a = new Bit(Bit.BIT_0);
         Bit b = new Bit(Bit.BIT_1);
-        Bit s = new Bit(Bit.BIT_0);
+        Bit s = new Bit(Bit.BIT_1);
         Bit o = new Bit();
 
         Mux mux = new Mux(null, o, a, b, s);
-        mux.toVerilog();
+//        mux.toVerilog();
 
+        PropagateManager.propagate(mux); // no value changed, out has default value: 0.
+        System.out.println("out: " + o.toString());
+
+        PropagateManager.propagate(mux); // no value changed, out has default value: 0.
+        System.out.println("out: " + o.toString());
+
+        s.assign(Bit.BIT_0);
         PropagateManager.propagate(mux);
-        System.out.println("out: " + o.toString()); // o = 0 != b, that's why we need a reset logic
+        System.out.println("out: " + o.toString());
 
         b.assign(Bit.BIT_0);
         PropagateManager.propagate(mux);
