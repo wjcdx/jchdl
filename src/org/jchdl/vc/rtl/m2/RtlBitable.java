@@ -27,10 +27,10 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.vc.rtl.m2;
 
-import org.jchdl.model.rtl.core.datatype.Bit;
-import org.jchdl.model.rtl.core.datatype.Bits;
 import org.jchdl.model.rtl.core.datatype.Reg;
 import org.jchdl.model.rtl.core.meta.Bitable;
+
+import java.lang.reflect.Field;
 
 public class RtlBitable {
     public static final String RTL_BITABLE_TYPE_WIRE = "wire";
@@ -40,22 +40,14 @@ public class RtlBitable {
     private String name;
     private int nBits;
 
-    public RtlBitable(String type, String name, int width) {
+    public RtlBitable(String type, String name, int nBits) {
         this.type = type;
         this.name = name;
-        this.nBits = width;
+        this.nBits = nBits;
     }
 
-    public RtlBitable(Bit bit) {
-        this(RTL_BITABLE_TYPE_WIRE, bit.getName(), 1);
-    }
-
-    public RtlBitable(Bits bits) {
-        this(RTL_BITABLE_TYPE_WIRE, bits.getName(), bits.nBits());
-    }
-
-    public RtlBitable(Reg reg) {
-        this(RTL_BITABLE_TYPE_REG, reg.getName(), reg.nBits());
+    public String getType() {
+        return type;
     }
 
     public String getName() {
@@ -66,7 +58,7 @@ public class RtlBitable {
         this.name = name;
     }
 
-    public int getBits() {
+    public int nBits() {
         return nBits;
     }
 
@@ -75,24 +67,13 @@ public class RtlBitable {
     }
 
     public String getDeclarationString() {
-        StringBuilder sb = new StringBuilder(type + " ");
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%-5s ", type));
         if (nBits > 1) {
-            sb.append("[").append(nBits - 1).append(":").append(0).append("] ");
+            sb.append(String.format("[%2d:%d] ", nBits - 1, 0));
         }
         sb.append(name);
         return sb.toString();
-    }
-
-    public static RtlBitable inst(Bitable bitable) {
-        RtlBitable rtlBitable = null;
-        if (bitable instanceof Bit) {
-            rtlBitable = new RtlBitable((Bit) bitable);
-        } else if (bitable instanceof Bits) {
-            rtlBitable = new RtlBitable((Bits) bitable);
-        } else if (bitable instanceof Reg) {
-            rtlBitable = new RtlBitable((Reg) bitable);
-        }
-        return rtlBitable;
     }
 
     public static String getType(Bitable bitable) {
@@ -101,5 +82,35 @@ public class RtlBitable {
         } else {
             return RTL_BITABLE_TYPE_WIRE;
         }
+    }
+
+    public static RtlBitable build(String direction, String name, Object object, Field field) throws IllegalAccessException {
+        if (direction == null) {
+            direction = ClassUtil.getFieldDirection(field);
+        }
+
+        if (name == null) {
+            name = field.getName();
+        }
+
+        Bitable bitable = (Bitable) field.get(object);
+        String type = getType(bitable);
+
+        int nBits = bitable.nBits();
+        if (nBits == 0) {
+            nBits = ClassUtil.getFieldWidth(field);
+        }
+
+        RtlBitable rtlBitable = null;
+        if (direction != null) {
+            rtlBitable = new RtlPort(direction, type, name, nBits);
+        } else {
+            rtlBitable = new RtlBitable(type, name, nBits);
+        }
+        return rtlBitable;
+    }
+
+    public static RtlBitable build(Object object, Field field) throws IllegalAccessException {
+        return build(null, null, object, field);
     }
 }

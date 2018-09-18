@@ -31,11 +31,12 @@ import org.jchdl.model.rtl.core.datatype.Bit;
 import org.jchdl.model.rtl.core.datatype.Bits;
 import org.jchdl.model.rtl.core.datatype.Reg;
 import org.jchdl.model.rtl.core.meta.Module;
+import org.jchdl.model.rtl.example.And2.Abc;
+import org.jchdl.model.rtl.example.And2.And2;
 import org.jchdl.model.rtl.example.AndAnd;
 import org.jchdl.model.rtl.example.Mos6502.Cpu;
+import org.jchdl.vc.rtl.m2.*;
 import org.jchdl.vc.rtl.m2.RtlBitable;
-import org.jchdl.vc.rtl.m2.RtlModule;
-import org.jchdl.vc.rtl.m2.RtlPort;
 import org.jchdl.vc.rtl.m2.block.RtlBlock;
 
 import java.io.IOException;
@@ -57,12 +58,12 @@ public class RtlVerilogConverter {
 
     private void translateModuleHeader(RtlModule rtlModule) {
         System.out.println("module " + rtlModule.getName() + " (");
-        ArrayList<RtlPort> interfaces = rtlModule.getInterfaces();
-        for (RtlPort rtlPort : interfaces) {
-            if (rtlPort != interfaces.get(interfaces.size() - 1)) {
-                System.out.println("  " + rtlPort.getDeclarationString() + ",");
+        ArrayList<RtlBitable> interfaces = rtlModule.getInterfaces();
+        for (int i = 0; i < interfaces.size(); i++) {
+            if (i != interfaces.size() - 1) {
+                System.out.println("  " + interfaces.get(i).getDeclarationString() + ",");
             } else {
-                System.out.println("  " + rtlPort.getDeclarationString());
+                System.out.println("  " + interfaces.get(i).getDeclarationString());
             }
         }
         System.out.println(");");
@@ -70,10 +71,7 @@ public class RtlVerilogConverter {
     }
 
     private void translateDeclarations(RtlModule rtlModule) {
-        ArrayList<RtlBitable> declarations = rtlModule.getDeclarations();
-        if (declarations.isEmpty()) return;
-
-        for (RtlBitable b : declarations) {
+        for (RtlBitable b : rtlModule.getDeclarations()) {
             System.out.println(b.getDeclarationString() + ";");
         }
         System.out.println();
@@ -88,7 +86,7 @@ public class RtlVerilogConverter {
                 if (i != parameters.size() - 1) {
                     System.out.print(" " + parameters.get(i) + ",");
                 } else {
-                    System.out.print(" " + parameters.get(i) + " ");
+                    System.out.print(" " + parameters.get(i) + "");
                 }
             }
             System.out.println(");");
@@ -165,9 +163,11 @@ public class RtlVerilogConverter {
     }
 
     public static void main(String[] args) {
-        Cpu cpu = getCpu();
-        cpu.toVerilog();
+//        Cpu cpu = getCpu();
+//        cpu.toVerilog();
 //        AndAnd aa = getAA();
 //        aa.toVerilog();
+        And2 and2 = new And2(null, new Bit(), new Abc());
+        and2.toVerilog();
     }
 }

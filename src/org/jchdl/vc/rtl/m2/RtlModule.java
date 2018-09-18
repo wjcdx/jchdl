@@ -28,32 +28,28 @@
 package org.jchdl.vc.rtl.m2;
 
 import javafx.util.Pair;
+import jdk.internal.org.objectweb.asm.ClassReader;
+import jdk.internal.org.objectweb.asm.tree.ClassNode;
+import jdk.internal.org.objectweb.asm.tree.LocalVariableNode;
+import jdk.internal.org.objectweb.asm.tree.MethodNode;
+import jdk.internal.org.objectweb.asm.tree.analysis.Analyzer;
+import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.jchdl.model.rtl.core.block.Always;
 import org.jchdl.model.rtl.core.block.Assign;
 import org.jchdl.model.rtl.core.block.Block;
 import org.jchdl.model.rtl.core.datatype.Bit;
 import org.jchdl.model.rtl.core.datatype.Bits;
 import org.jchdl.model.rtl.core.datatype.Reg;
-import org.jchdl.model.rtl.core.datatype.annotation.Range;
-import org.jchdl.model.rtl.core.datatype.annotation.Width;
-import org.jchdl.model.rtl.core.io.annotation.Input;
-import org.jchdl.model.rtl.core.io.annotation.Output;
+import org.jchdl.model.rtl.core.datatype.Structure;
 import org.jchdl.model.rtl.core.meta.Bitable;
 import org.jchdl.model.rtl.core.meta.Module;
 import org.jchdl.vc.rtl.asm.RtlAnalyzer;
 import org.jchdl.vc.rtl.asm.RtlInterpreter;
 import org.jchdl.vc.rtl.asm.RtlValue;
-import org.jchdl.vc.rtl.cfg.*;
+import org.jchdl.vc.rtl.cfg.RtlStmt;
 import org.jchdl.vc.rtl.m2.block.RtlAlways;
 import org.jchdl.vc.rtl.m2.block.RtlAssign;
 import org.jchdl.vc.rtl.m2.block.RtlBlock;
-import jdk.internal.org.objectweb.asm.ClassReader;
-import jdk.internal.org.objectweb.asm.Type;
-import jdk.internal.org.objectweb.asm.tree.ClassNode;
-import jdk.internal.org.objectweb.asm.tree.LocalVariableNode;
-import jdk.internal.org.objectweb.asm.tree.MethodNode;
-import jdk.internal.org.objectweb.asm.tree.analysis.Analyzer;
-import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -68,12 +64,13 @@ public class RtlModule {
     private MethodNode initMethodNode;
     private MethodNode logicMethodNode;
     private LinkedHashMap<String, RtlBitable> bitableFields = new LinkedHashMap<>(32);
+    private LinkedHashMap<String, RtlStructure> structureFields = new LinkedHashMap<>(32);
     private ArrayList<RtlBitable> bitableLocals = new ArrayList<>(32); // bitable local variables of method:logic
 
     /**
      * Input/Output declarations.
      */
-    private ArrayList<RtlPort> interfaces = new ArrayList<>(32);
+    private ArrayList<RtlBitable> interfaces = new ArrayList<>(32);
     /**
      * Parameters provide by parent module to initiate this module.
      */
@@ -125,7 +122,7 @@ public class RtlModule {
         return modelModule;
     }
 
-    public ArrayList<RtlPort> getInterfaces() {
+    public ArrayList<RtlBitable> getInterfaces() {
         return interfaces;
     }
 
@@ -158,6 +155,7 @@ public class RtlModule {
 
     private void fillModuleMeta() throws IllegalAccessException, IOException {
         // fill with instance info
+        fillModuleStructureFields();
         fillModuleBitableFields();
         fillModuleBitableLocals();
         fillModuleChildInstances();
@@ -170,40 +168,42 @@ public class RtlModule {
         fillModuleBlockRunnables();
     }
 
+    private void fillModuleStructureFields() throws IllegalAccessException {
+        for (Field field : modelModule.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            if (Structure.class.isAssignableFrom(field.getType())) {
+                String dir = ClassUtil.getFieldDirection(field);
+                Structure structure = (Structure) field.get(modelModule);
+                RtlStructure rtlStructure = new RtlStructure(dir, field.getName(), structure);
+                this.structureFields.put(field.getName(), rtlStructure);
+                this.structureFields.putAll(rtlStructure.getRtlStructures());
+            }
+        }
+    }
+
     private void fillModuleBitableFields() throws IllegalAccessException {
         for (Field field : modelModule.getClass().getDeclaredFields()) {
             field.setAccessible(true);
-            if (!Bitable.class.isAssignableFrom(field.getType())) {
-                continue;
+            if (Bitable.class.isAssignableFrom(field.getType())) {
+                RtlBitable rtlBitable = RtlBitable.build(modelModule, field);
+                this.bitableFields.put(field.getName(), rtlBitable);
+            } else if (Structure.class.isAssignableFrom(field.getType())) {
+                RtlStructure rtlStructure = structureFields.get(field.getName());
+                this.bitableFields.putAll(rtlStructure.getRtlBitables());
             }
-
-            Bitable bitable = (Bitable) field.get(modelModule);
-            int nBits = bitable.nBits();
-            if (nBits == 0) {
-                nBits = getFieldWidth(field);
-            }
-
-            RtlBitable rtlBitable = null;
-            String dir = getFieldDirection(field);
-            if (dir != null) {
-                rtlBitable = new RtlPort(dir, RtlBitable.getType(bitable), field.getName(), nBits);
-            } else {
-                rtlBitable = new RtlBitable(RtlBitable.getType(bitable), field.getName(), nBits);
-            }
-            this.bitableFields.put(field.getName(), rtlBitable);
         }
     }
 
     // bitable local variables of method:logic
     private void fillModuleBitableLocals() {
         for (LocalVariableNode lvn : logicMethodNode.localVariables) {
-            Class clazz = getClass(Type.getType(lvn.desc));
+            Class clazz = ClassUtil.getClassOfDesc(lvn.desc);
             if (clazz == Bit.class || clazz == Bits.class) {
                 bitableLocals.add(new RtlBitable(RtlBitable.RTL_BITABLE_TYPE_WIRE, lvn.name, 0));
             } else if (clazz == Reg.class) {
                 bitableLocals.add(new RtlBitable(RtlBitable.RTL_BITABLE_TYPE_REG, lvn.name, 0));
             } else {
-                bitableLocals.add(null);
+                bitableLocals.add(null);// place holder
             }
         }
     }
@@ -228,15 +228,15 @@ public class RtlModule {
     private void fillModuleInterfaces() {
         for (int i = 0; i < initMethodNode.localVariables.size(); i++) {
             LocalVariableNode lvn = initMethodNode.localVariables.get(i);
-
-            Class clazz = getClass(Type.getType(lvn.desc));
-            if (!Bitable.class.isAssignableFrom(clazz)) {
-                continue;
-            }
-
-            RtlBitable field = bitableFields.get(lvn.name);
-            if (field instanceof RtlPort) {
-                this.interfaces.add((RtlPort) field);
+            Class clazz = ClassUtil.getClassOfDesc(lvn.desc);
+            if (Bitable.class.isAssignableFrom(clazz)) {
+                RtlBitable rtlBitable = bitableFields.get(lvn.name);
+                if (rtlBitable instanceof RtlPort) {
+                    this.interfaces.add(rtlBitable);
+                }
+            } else if (Structure.class.isAssignableFrom(clazz)) {
+                RtlStructure rtlStructure = structureFields.get(lvn.name);
+                this.interfaces.addAll(rtlStructure.getRtlBitables().values());
             }
         }
     }
@@ -265,7 +265,6 @@ public class RtlModule {
         if (logicMethodNode.localVariables.size() <= 1) {
             return;
         }
-
         Analyzer<RtlValue> analyzer = new Analyzer<>(
                 new RtlInterpreter(this, logicMethodNode, new RtlInterpreter.Callbacks() {
                     @Override
@@ -277,7 +276,6 @@ public class RtlModule {
                         }
                     }
                 }));
-
         try {
             analyzer.analyze(classNode.name, logicMethodNode);
         } catch (AnalyzerException e) {
@@ -292,7 +290,12 @@ public class RtlModule {
                     @Override
                     public void notifyChildParameter(int index, String parameter) {
                         RtlModule child = children.get(index);
-                        child.parameters.add(parameter);
+                        if (RtlStructure.hasPrefix(parameter)) {
+                            RtlStructure rtlStructure = structureFields.get(RtlStructure.trimPrefix(parameter));
+                            child.parameters.addAll(rtlStructure.getRtlBitables().keySet());
+                        } else {
+                            child.parameters.add(parameter);
+                        }
                     }
                 }));
 
@@ -403,44 +406,9 @@ public class RtlModule {
     public int getFieldWidth(String fieldName) {
         RtlBitable rtlBitable = bitableFields.get(fieldName);
         if (rtlBitable != null) {
-            return rtlBitable.getBits();
+            return rtlBitable.nBits();
         }
         return 0;
     }
 
-    private int getFieldWidth(Field field) {
-        Width width = field.getAnnotation(Width.class);
-        if (width != null) {
-            return width.value();
-        }
-        Range range = field.getAnnotation(Range.class);
-        if (range != null) {
-            return range.msb() - range.lsb() + 1;
-        }
-        return 0;
-    }
-
-    private String getFieldDirection(Field field) {
-        if (field.getAnnotation(Input.class) != null) {
-            return RtlPort.RTL_PORT_TYPE_INPUT;
-        } else if (field.getAnnotation(Output.class) != null) {
-            return RtlPort.RTL_PORT_TYPE_OUTPUT;
-        }
-        return null;
-    }
-
-    private static Class<?> getClass(String desc) {
-        try {
-            return Class.forName(desc.replace('/', '.'));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e.toString());
-        }
-    }
-
-    private static Class<?> getClass(Type t) {
-        if (t.getSort() == Type.OBJECT) {
-            return getClass(t.getInternalName());
-        }
-        return getClass(t.getDescriptor());
-    }
 }

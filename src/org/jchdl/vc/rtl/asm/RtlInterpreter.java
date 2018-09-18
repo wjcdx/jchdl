@@ -32,6 +32,7 @@ import org.jchdl.model.rtl.core.block.Assign;
 import org.jchdl.model.rtl.core.datatype.Bit;
 import org.jchdl.model.rtl.core.datatype.Bits;
 import org.jchdl.model.rtl.core.datatype.Reg;
+import org.jchdl.model.rtl.core.datatype.Structure;
 import org.jchdl.model.rtl.core.event.ChangingEvent;
 import org.jchdl.model.rtl.core.event.NegEdgeEvent;
 import org.jchdl.model.rtl.core.event.PosEdgeEvent;
@@ -39,6 +40,7 @@ import org.jchdl.model.rtl.core.event.expression.Expression;
 import org.jchdl.model.rtl.core.meta.Bitable;
 import org.jchdl.model.rtl.core.meta.Module;
 import org.jchdl.vc.rtl.cfg.*;
+import org.jchdl.vc.rtl.m2.ClassUtil;
 import org.jchdl.vc.rtl.m2.RtlModule;
 import jdk.internal.org.objectweb.asm.Handle;
 import jdk.internal.org.objectweb.asm.Opcodes;
@@ -46,6 +48,7 @@ import jdk.internal.org.objectweb.asm.Type;
 import jdk.internal.org.objectweb.asm.tree.*;
 import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException;
 import jdk.internal.org.objectweb.asm.tree.analysis.Interpreter;
+import org.jchdl.vc.rtl.m2.RtlStructure;
 
 import java.util.List;
 
@@ -68,8 +71,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
      * Constructs a new {@link Interpreter}.
      *
      * @param api the ASM API version supported by this interpreter. Must be one of {@link
-     *            Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link
-     *            Opcodes#ASM6} or {@link Opcodes#ASM7_EXPERIMENTAL}.
+     *            Opcodes#ASM4}, {@link Opcodes#ASM5}.
      */
     protected RtlInterpreter(int api) {
         super(api);
@@ -141,7 +143,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                 throw new AnalyzerException(insn, "JSR instruction not supported");
             case GETSTATIC:
                 FieldInsnNode fin = (FieldInsnNode) insn;
-                Class ownerClass = getClass(fin.owner);
+                Class ownerClass = ClassUtil.getClassOfName(fin.owner);
                 if (Bit.class.isAssignableFrom(ownerClass)) {
                     if (fin.name.equals("B0")) {
                         return new RtlValue(Type.getType(fin.desc), "0");
@@ -285,13 +287,27 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
             case GETFIELD: // stack: objref
                 RtlValue v = null;
                 FieldInsnNode fin = (FieldInsnNode) insn;
-                Class ownerClass = getClass(fin.owner);
+                Class ownerClass = ClassUtil.getClassOfName(fin.owner);
                 if (Module.class.isAssignableFrom(ownerClass)) {
-                    v = new RtlValue(Type.getType(fin.desc), fin.name);
-                    v.nBits = rtlModule.getFieldWidth(fin.name);
+                    Class clazz = ClassUtil.getClassOfDesc(fin.desc);
+                    if (Bitable.class.isAssignableFrom(clazz)) {
+                        v = new RtlValue(Type.getType(fin.desc), fin.name);
+                        v.nBits = rtlModule.getFieldWidth(fin.name);
+                    } else if (Structure.class.isAssignableFrom(clazz)) {
+                        v = new RtlValue(Type.getType(fin.desc), RtlStructure.PREFIX + fin.name);
+                    }
                 } else if (Bit.class.isAssignableFrom(ownerClass)) {
                     if (fin.name.equals("value")) {
                         v = new RtlValue(Type.getType(fin.desc), value.getExpr());
+                    }
+                } else if (Structure.class.isAssignableFrom(ownerClass)) {
+                    Class clazz = ClassUtil.getClassOfDesc(fin.desc);
+                    if (Bitable.class.isAssignableFrom(clazz)) {
+                        String expr = RtlStructure.trimPrefix(value.getExpr()) + RtlStructure.DELIMITER + fin.name;
+                        v = new RtlValue(Type.getType(fin.desc), expr);
+                        v.nBits = rtlModule.getFieldWidth(expr);
+                    } else if (Structure.class.isAssignableFrom(clazz)) {
+                        v = new RtlValue(Type.getType(fin.desc), value.getExpr() + RtlStructure.DELIMITER + fin.name);
                     }
                 }
                 return v;
@@ -513,7 +529,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
             Object handle = dyn.bsmArgs[1];
             if (handle instanceof Handle) {
                 Type type = Type.getReturnType(dyn.desc);
-                Class returnClass = getClass(type);
+                Class returnClass = ClassUtil.getClassOfType(type);
                 String expr = ((Handle) handle).getName();
                 if (returnClass == Expression.class) {
                     expr = "expr:" + expr;
@@ -531,7 +547,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                 case "to": // Reg.to(Bit), Reg.to(Bits)
                     return values.get(0);
                 case "inst":
-                    Class ownerClass = getClass(min.owner);
+                    Class ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (ownerClass == Bit.class) { // Bit.inst(set), stack: set
                         RtlValue set = values.get(0);
                         RtlValue v = new RtlValue(type, "(" + set.getExpr() + ")");
@@ -555,7 +571,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                     }
                     break;
                 case "of":
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (ownerClass == ChangingEvent.class) { // stack: bitable|bitables
                         return new RtlValue(type, values.get(0).getExpr()); // do not change, to be used by method:when
                     } else if (ownerClass == PosEdgeEvent.class) { // stack: bit
@@ -593,7 +609,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                         return objref;
                     }
                 case "part":
-                    Class ownerClass = getClass(min.owner);
+                    Class ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         String bit = values.get(0).getExpr();
                         if (values.size() == 2) { // stack: objref, msb
@@ -609,7 +625,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                 case "boolVal":
                     return objref;
                 case "intVal": // stack: objref, msb, lsb
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         if (values.size() == 3) {
                             String msb = values.get(1).getExpr();
@@ -641,7 +657,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                     // The first objref is pushed by new, and the second by dup.
                     // By reuse a single RtlValue object, we can change the expr
                     // of the first objref, by changing the expr of the second objref.
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (ownerClass == Bit.class) {
                         objref.nBits = 1;
                         return objref;
@@ -658,49 +674,49 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                     }
                     break;
                 case "eq": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(" + objref.getExpr() + "==" + values.get(1).getExpr() + ")");
                     }
                     break;
                 case "ne": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(" + objref.getExpr() + "!=" + values.get(1).getExpr() + ")");
                     }
                     break;
                 case "lt": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(" + objref.getExpr() + "<" + values.get(1).getExpr() + ")");
                     }
                     break;
                 case "le": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(" + objref.getExpr() + "<=" + values.get(1).getExpr() + ")");
                     }
                     break;
                 case "gt": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(" + objref.getExpr() + ">" + values.get(1).getExpr() + ")");
                     }
                     break;
                 case "ge": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(" + objref.getExpr() + ">=" + values.get(1).getExpr() + ")");
                     }
                     break;
                 case "and": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, objref.getExpr() + "&" + values.get(1).getExpr());
                     }
                     break;
                 case "or":
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) { // stack: objref, arg0
                         return new RtlValue(type, objref.getExpr() + "|" + values.get(1).getExpr());
                     } else if (Always.class.isAssignableFrom(ownerClass)) { // stack: objref, event
@@ -708,38 +724,38 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                     }
                     break;
                 case "xor": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, objref.getExpr() + "^" + values.get(1).getExpr());
                     }
                     break;
                 case "not": // stack: objref
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, "(~(" + objref.getExpr() + "))");
                     }
                     break;
                 case "add": // stack: objref, arg0
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) {
                         return new RtlValue(type, objref.getExpr() + "+" + values.get(1).getExpr());
                     }
                     break;
                 case "when": // stack: objref, events
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Module.class.isAssignableFrom(ownerClass)) {
                         callbacks.notifyAlwaysEvents(nBlock, values.get(1).getExpr());
                     }
                     break;
                 case "run"://stack: objref, methodName
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Always.class.isAssignableFrom(ownerClass)) {
                         callbacks.notifyAlwaysRunnable(nBlock, values.get(1).getExpr());
                         nBlock++;
                     }
                     break;
                 case "assign": // stack: objref, bit|bits
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Module.class.isAssignableFrom(ownerClass)) {
                         callbacks.notifyAssignTarget(nBlock, values.get(1).getExpr());
                     } else if (Bitable.class.isAssignableFrom(ownerClass)) { // stack: objref, bitable
@@ -749,20 +765,20 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                     }
                     break;
                 case "from"://stack: objref, bitables|expr
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Assign.class.isAssignableFrom(ownerClass)) {
                         callbacks.notifyAssignSources(nBlock, values.get(1).getExpr());
                     }
                     break;
                 case "with"://stack: objref, methodName
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Assign.class.isAssignableFrom(ownerClass)) {
                         callbacks.notifyAssignRunnable(nBlock, values.get(1).getExpr());
                         nBlock++;
                     }
                     break;
                 case "set":
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) { // stack: objref, bitable|iconst
                         RtlAssignStmt stmt = new RtlAssignStmt(RtlAssignStmt.STMT_MODIFIER_SET,
                                 objref.getExpr(), values.get(1).getExpr());
@@ -770,7 +786,7 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                     }
                     break;
                 case "match":
-                    ownerClass = getClass(min.owner);
+                    ownerClass = ClassUtil.getClassOfName(min.owner);
                     if (Bitable.class.isAssignableFrom(ownerClass)) { // stack: objref, matches
                         return new RtlValue(type, "MATCH:" + objref.getExpr() + ":" + values.get(1).getExpr());
                     }
@@ -793,21 +809,6 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
             return value2;
         }
         return value1;
-    }
-
-    private static Class<?> getClass(String desc) {
-        try {
-            return Class.forName(desc.replace('/', '.'));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e.toString());
-        }
-    }
-
-    private static Class<?> getClass(Type t) {
-        if (t.getSort() == Type.OBJECT) {
-            return getClass(t.getInternalName());
-        }
-        return getClass(t.getDescriptor());
     }
 
     private int getInsnIndex(AbstractInsnNode insnNode) {
@@ -841,9 +842,5 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
 
         default void notifyStatement(int insnIndex, RtlStmt statement) {
         }
-    }
-
-    public class RtlCallbacks implements Callbacks {
-
     }
 }
