@@ -30,6 +30,7 @@ package org.jchdl.vc.rtl.m2;
 import jdk.internal.org.objectweb.asm.Type;
 import org.jchdl.model.rtl.core.datatype.annotation.Range;
 import org.jchdl.model.rtl.core.datatype.annotation.Width;
+import org.jchdl.model.rtl.core.io.annotation.Inout;
 import org.jchdl.model.rtl.core.io.annotation.Input;
 import org.jchdl.model.rtl.core.io.annotation.Output;
 
@@ -61,6 +62,8 @@ public class ClassUtil {
             return RtlPort.RTL_PORT_TYPE_INPUT;
         } else if (field.getAnnotation(Output.class) != null) {
             return RtlPort.RTL_PORT_TYPE_OUTPUT;
+        } else if (field.getAnnotation(Inout.class) != null) {
+            return RtlPort.RTL_PORT_TYPE_INOUT;
         }
         return null;
     }

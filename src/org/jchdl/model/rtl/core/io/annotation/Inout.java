@@ -27,5 +27,9 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.rtl.core.io.annotation;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Inout {
 }
