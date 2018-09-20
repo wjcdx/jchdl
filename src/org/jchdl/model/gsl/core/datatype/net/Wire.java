@@ -134,6 +134,11 @@ public class Wire extends Net implements Assignable {
     }
 
     @Override
+    public String toString() {
+        return getValue().toString();
+    }
+
+    @Override
     public void propagate() {
         this.out.value.v = this.in.value.v;
         this.out.propagate();
@@ -163,7 +168,12 @@ public class Wire extends Net implements Assignable {
         return wire;
     }
 
+    @Deprecated
     public static Wire[] array(Wire... wires) {
+        return wires;
+    }
+
+    public static Wire[] arrayOf(Wire... wires) {
         return wires;
     }
 
