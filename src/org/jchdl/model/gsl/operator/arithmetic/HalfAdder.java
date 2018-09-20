@@ -28,21 +28,21 @@
 package org.jchdl.model.gsl.operator.arithmetic;
 
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.And;
-import org.jchdl.model.gsl.core.gate.ni.Xor;
+import org.jchdl.model.gsl.core.gate.ni.atomic.And;
+import org.jchdl.model.gsl.core.gate.ni.atomic.Xor;
 import org.jchdl.model.gsl.core.meta.Node;
 
 public class HalfAdder extends Node {
     private Wire a;
     private Wire b;
-    private Wire sum;
-    private Wire cout;
+    private Wire s;
+    private Wire c;
 
-    public HalfAdder(Wire sum, Wire cout, Wire a, Wire b) {
+    public HalfAdder(Wire s, Wire c, Wire a, Wire b) {
         in(a);
         in(b);
-        out(sum);
-        out(cout);
+        out(s);
+        out(c);
         construct();
     }
 
@@ -50,11 +50,11 @@ public class HalfAdder extends Node {
     public void logic() {
         a = new Wire(in(0));
         b = new Wire(in(1));
-        sum = new Wire(out(0));
-        cout = new Wire(out(1));
+        s = new Wire(out(0));
+        c = new Wire(out(1));
 
-        Xor.inst(sum, a, b);
-        And.inst(cout, a, b);
+        Xor.inst(s, a, b);
+        And.inst(c, a, b);
     }
 
     public static HalfAdder inst(Wire sum, Wire cout, Wire a, Wire b) {

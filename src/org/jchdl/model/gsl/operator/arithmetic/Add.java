@@ -69,6 +69,11 @@ public class Add extends Node {
         cout.connect(out(-1));
     }
 
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
+    }
+
     public static Add inst(WireVec sum, Wire cout, WireVec in1, WireVec in2, Wire cin) {
         return new Add(sum, cout, in1, in2, cin);
     }
@@ -82,11 +87,11 @@ public class Add extends Node {
 
         Add.inst(out, cout, in1, in2, cin);
 
-        in1.assign(new Value[] {
+        in1.assign(new Value[] { //0b0000_0010
                 Value.V0, Value.V1, Value.V0, Value.V0,
                 Value.V0, Value.V0, Value.V0, Value.V0,
         });
-        in2.assign(new Value[] {
+        in2.assign(new Value[] { // 0b1111_1111
                 Value.V1, Value.V1, Value.V1, Value.V1,
                 Value.V1, Value.V1, Value.V1, Value.V1,
         });
@@ -96,12 +101,7 @@ public class Add extends Node {
         in2.propagate();
         cin.propagate();
 
-        System.out.print("out: ");
-        System.out.print(cout.getValue().toString() + "_");
-        for (int i = out.nBits() - 1; i >= 0; i--) {
-            System.out.print(out.wire(i).getValue().toString());
-        }
-        System.out.println();
+        System.out.println("c_sum: " + cout + "_" + out);
 
         Add.inst(out, cout, in1, in2, cin).toVerilog();
     }

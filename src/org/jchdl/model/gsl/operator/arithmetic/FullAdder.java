@@ -28,20 +28,20 @@
 package org.jchdl.model.gsl.operator.arithmetic;
 
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.Or;
+import org.jchdl.model.gsl.core.gate.ni.atomic.Or;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.value.Value;
 
 public class FullAdder extends Node {
     private Wire a;
     private Wire b;
-    private Wire cin;
-    private Wire sum;
-    private Wire cout;
+    private Wire ci;
+    private Wire s;
+    private Wire co;
 
-    public FullAdder(Wire sum, Wire cout, Wire a, Wire b, Wire cin) {
-        in(Wire.array(a, b, cin));
-        out(Wire.array(sum, cout));
+    public FullAdder(Wire s, Wire co, Wire a, Wire b, Wire ci) {
+        in(Wire.arrayOf(a, b, ci));
+        out(Wire.arrayOf(s, co));
         construct();
     }
 
@@ -50,19 +50,19 @@ public class FullAdder extends Node {
     public void logic() {
         a = new Wire(in(0));
         b = new Wire(in(1));
-        cin = new Wire(in(2));
+        ci = new Wire(in(2));
 
-        sum = new Wire(out(0));
-        cout = new Wire(out(1));
+        s = new Wire(out(0));
+        co = new Wire(out(1));
 
         Wire s1 = new Wire();
         Wire c1 = new Wire();
         HalfAdder.inst(s1, c1, a, b);
 
         Wire c2 = new Wire();
-        HalfAdder.inst(sum, c2, s1, cin);
+        HalfAdder.inst(s, c2, s1, ci);
 
-        Or.inst(cout, c1, c2);
+        Or.inst(co, c1, c2);
     }
 
     public static FullAdder inst(Wire sum, Wire cout, Wire a, Wire b, Wire cin) {
