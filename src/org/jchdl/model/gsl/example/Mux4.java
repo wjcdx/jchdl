@@ -30,6 +30,7 @@ package org.jchdl.model.gsl.example;
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
 import org.jchdl.model.gsl.core.meta.Node;
+import org.jchdl.model.gsl.core.meta.PropagateManager;
 import org.jchdl.model.gsl.core.value.Value;
 import org.jchdl.model.gsl.operator.conditional.Mux;
 
@@ -89,13 +90,27 @@ public class Mux4 extends Node {
 
         dat.assign(new Value[] {Value.V1, Value.V0, Value.V1, Value.V0 });
         //0bs1_s0: 0/1/2/3 => dat 0 1 2 3
-        sel.assign(new Value[] {Value.V1, Value.V1 });
-
-        dat.propagate();
-        sel.propagate();
-
+        sel.assign(new Value[] {Value.V0, Value.V0 });
+//        dat.propagate();
+//        sel.propagate();
+        PropagateManager.propagateParallel(dat, sel);
         System.out.println("out: " + out.getValue().toString());
 
-        mux4.toVerilog();
+        sel.assign(new Value[] {Value.V1, Value.V0 });
+        PropagateManager.propagateParallel(sel);
+//        sel.propagate();
+        System.out.println("out: " + out.getValue().toString());
+
+        sel.assign(new Value[] {Value.V0, Value.V1 });
+        PropagateManager.propagateParallel(sel);
+//        sel.propagate();
+        System.out.println("out: " + out.getValue().toString());
+
+        sel.assign(new Value[] {Value.V1, Value.V1 });
+        PropagateManager.propagateParallel(sel);
+//        sel.propagate();
+        System.out.println("out: " + out.getValue().toString());
+
+//        mux4.toVerilog();
     }
 }
