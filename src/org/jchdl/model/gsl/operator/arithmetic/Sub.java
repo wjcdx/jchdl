@@ -39,7 +39,6 @@ import org.jchdl.model.gsl.operator.arithmetic.code.ComplementTwo;
 // it is not needed to take extra attention of the sign bits.
 public class Sub extends Node {
     private int nBits;
-
     private WireVec in1;
     private WireVec in2;
     private WireVec out;
@@ -66,6 +65,11 @@ public class Sub extends Node {
         cin = Wire.pulledDown();
         cout = Wire.toGround();
         Add.inst(out, cout, in1, in2c2, cin);
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
     }
 
     public static Sub inst(WireVec out, WireVec in1, WireVec in2) {

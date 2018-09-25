@@ -36,6 +36,8 @@ import org.jchdl.model.gsl.operator.arithmetic.Add;
 
 public class ComplementTwo extends Node {
     private int nBits = 0;
+    private WireVec in;
+    private WireVec out;
 
     public ComplementTwo(WireVec out, WireVec in) {
         nBits = in.nBits();
@@ -46,9 +48,8 @@ public class ComplementTwo extends Node {
 
     @Override
     public void logic() {
-        WireVec in = new WireVec(inputs());
-        WireVec out = new WireVec(nBits);
-        out.connect(outputs(0, nBits));
+        in = new WireVec(inputs());
+        out = new WireVec(outputs());
 
         WireVec inc1 = new WireVec(nBits);
         ComplementOne.inst(inc1, in);
@@ -57,6 +58,11 @@ public class ComplementTwo extends Node {
         Wire cin = Wire.pulledUp();
         Wire cout = Wire.toGround();
         Add.inst(out, cout, inc1, in1, cin);
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + inputs().length;
     }
 
     public static ComplementTwo inst(WireVec out, WireVec in) {
@@ -76,11 +82,8 @@ public class ComplementTwo extends Node {
 
         PropagateManager.add(in1);
         PropagateManager.propagateParallel();
+        System.out.println("out: " + out);
 
-        System.out.print("out: ");
-        for (int i = out.nBits() - 1; i >= 0; i--) {
-            System.out.print(out.wire(i).getValue().toString());
-        }
-        System.out.println();
+        ComplementTwo.inst(out, in1).toVerilog();
     }
 }

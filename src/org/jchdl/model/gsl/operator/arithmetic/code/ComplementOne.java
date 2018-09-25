@@ -33,9 +33,10 @@ import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.value.Value;
 
 public class ComplementOne extends Node {
-    private int nBits = 0;
+    private WireVec in;
+    private WireVec out;
+
     public ComplementOne(WireVec out, WireVec in) {
-        nBits = in.nBits();
         in(in.wires());
         out(out.wires());
         construct();
@@ -43,10 +44,14 @@ public class ComplementOne extends Node {
 
     @Override
     public void logic() {
-        WireVec in = new WireVec(inputs());
-        WireVec out = new WireVec(nBits);
-        out.connect(outputs());
+        in = new WireVec(inputs());
+        out = new WireVec(outputs());
         Not.inst(out.wires(), in.wires());
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + inputs().length;
     }
 
     public static ComplementOne inst(WireVec out, WireVec in) {
@@ -65,11 +70,8 @@ public class ComplementOne extends Node {
         });
 
         in1.propagate();
+        System.out.println("out: " + out);
 
-        System.out.print("out: ");
-        for (int i = out.nBits() - 1; i >= 0; i--) {
-            System.out.print(out.wire(i).getValue().toString());
-        }
-        System.out.println();
+        ComplementOne.inst(out, in1).toVerilog();
     }
 }
