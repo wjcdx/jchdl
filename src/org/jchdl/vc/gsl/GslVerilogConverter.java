@@ -41,15 +41,14 @@ import java.util.HashSet;
 public class GslVerilogConverter {
     private static boolean TRANSLATE_PULL_INTO_ASSIGN = false;
     private GslNode topGslNode;
-    private HashSet<Class<?>> moduleTranslated = new HashSet<>(16);
+    private HashSet<String> moduleTranslated = new HashSet<>(16);
 
     private GslVerilogConverter(Node node) {
         this.topGslNode = new GslNode(node);
     }
 
     private boolean nodeTypeTranslated(GslNode gslNode) {
-        Class clazz = gslNode.getModelNode().getClass();
-        return !moduleTranslated.add(clazz);
+        return !moduleTranslated.add(gslNode.getName());
     }
 
     public static void setTranslatePullIntoAssign(boolean translatePullIntoAssign) {
