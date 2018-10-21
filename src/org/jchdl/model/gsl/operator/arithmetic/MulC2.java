@@ -136,6 +136,11 @@ public class MulC2 extends Node {
         cout.connect(out(-1));
     }
 
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
+    }
+
     public static MulC2 inst(WireVec out, Wire cout, WireVec in1, WireVec in2) {
         return new MulC2(out, cout, in1, in2);
     }

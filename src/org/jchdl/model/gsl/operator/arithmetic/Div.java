@@ -109,6 +109,11 @@ public class Div extends Node {
         Assign.inst(rem.wires(), in1d.wires(nBits, 2 * nBits));
     }
 
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
+    }
+
     public static Div inst(WireVec out, WireVec remainder, WireVec in1, WireVec in2) {
         return new Div(out, remainder, in1, in2);
     }
