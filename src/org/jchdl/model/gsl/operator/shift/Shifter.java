@@ -52,16 +52,6 @@ public abstract class Shifter extends Node {
         in = new WireVec(inputs());
         out = new WireVec(outputs());
         shift(out, in);
-
-//        if (nShiftBits == 0) {
-//            bridge(0, nBits - nShiftBits);
-//        } else if (nBits <= nShiftBits) {
-//            // all bits output 0 with a and 0 gate.
-//            pad(nBits, 0);
-//        } else {
-//            pad(nShiftBits, nBits - nShiftBits);
-//            bridge(nShiftBits, nBits - nShiftBits);
-//        }
     }
 
     @Override

@@ -29,8 +29,8 @@ package org.jchdl.model.gsl.operator.arithmetic;
 
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.And;
-import org.jchdl.model.gsl.core.gate.ni.Xor;
+import org.jchdl.model.gsl.core.gate.ni.atomic.And;
+import org.jchdl.model.gsl.core.gate.ni.atomic.Xor;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.meta.PropagateManager;
 import org.jchdl.model.gsl.core.value.Value;
@@ -42,11 +42,16 @@ import org.jchdl.model.gsl.operator.shift.LogicalLeft;
 
 // using Two's complement code, treat MSB as the sign bit.
 //
-// Same as MulSigned, because Two's complement code is used to encode signed numbers,
+// Mul for signed numbers, because Two's complement code is used to encode signed numbers,
 // but implemented in the perspective of a machine.
 public class MulC2 extends Node {
     private int nBits = 0;
     private int nResultBits = 0;
+
+    private WireVec in1;
+    private WireVec in2;
+    private Wire cout;
+    private WireVec out;
 
     public MulC2(WireVec out, Wire cout, WireVec in1, WireVec in2) {
         nBits = in1.nBits();
@@ -61,8 +66,8 @@ public class MulC2 extends Node {
     @Override
     public void logic() {
         // 0. pad in1 with its sign bit
-        WireVec in1 = new WireVec(inputs(0, nBits));
-        Wire sign1 = new Wire(in(nBits - 1));
+        in1 = new WireVec(inputs(0, nBits));
+        Wire sign1 = in1.wire(-1);
 
         WireVec pad1 = new WireVec(nBits);
         Replicate.inst(pad1, sign1, nBits);
@@ -79,8 +84,8 @@ public class MulC2 extends Node {
         Mux.inst(in1m.wires(), in1Padded.wires(), in1c2.wires(), sign1);
 
         // 1. pad in2 with its sign bit
-        WireVec in2 = new WireVec(inputs(nBits, 2 * nBits));
-        Wire sign2 = new Wire(in(2 * nBits - 1));
+        in2 = new WireVec(inputs(nBits, 2 * nBits));
+        Wire sign2 = in2.wire(-1);
 
         WireVec pad2 = new WireVec(nBits);
         Replicate.inst(pad2, sign2, nBits);
@@ -96,7 +101,7 @@ public class MulC2 extends Node {
         WireVec in2m = new WireVec(nResultBits);
         Mux.inst(in2m.wires(), in2Padded.wires(), in2c2.wires(), sign2);
 
-        Wire cin = Wire.pulledDown();
+        cout = Wire.pulledDown();
         WireVec sum = WireVec.pulledDown(nResultBits);
         for (int i = 0; i < nBits; i++) {
             WireVec outAnd = new WireVec(nResultBits);
@@ -109,8 +114,8 @@ public class MulC2 extends Node {
 
             WireVec sumNext = new WireVec(nResultBits);
             Wire coutNext = new Wire();
-            Add.inst(sumNext, coutNext, sum, outShifted, cin);
-            cin = coutNext;
+            Add.inst(sumNext, coutNext, sum, outShifted, cout);
+            cout = coutNext;
             sum = sumNext;
         }
 
@@ -123,12 +128,12 @@ public class MulC2 extends Node {
         ComplementTwo.inst(sumc2, sum);
 
         // 2.2 choose result from sum and sumc2, according to the final sign
-        WireVec sumFinal = new WireVec(nResultBits);
-        Mux.inst(sumFinal.wires(), sum.wires(), sumc2.wires(), signFinal);
+        out = new WireVec(nResultBits);
+        Mux.inst(out.wires(), sum.wires(), sumc2.wires(), signFinal);
 
         // 3. output the result
-        sumFinal.connect(outputs(0, nResultBits));
-        cin.connect(out(-1));
+        out.connect(outputs(0, nResultBits));
+        cout.connect(out(-1));
     }
 
     public static MulC2 inst(WireVec out, Wire cout, WireVec in1, WireVec in2) {
@@ -153,11 +158,8 @@ public class MulC2 extends Node {
         PropagateManager.add(in1, in2);
         PropagateManager.propagateParallel();
 
-        System.out.print("out: ");
-        System.out.print(cout.getValue().toString() + "_");
-        for (int i = out.nBits() - 1; i >= 0; i--) {
-            System.out.print(out.wire(i).getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + cout.toString() + "_" + out.toString());
+
+        MulC2.inst(out, cout, in1, in2).toVerilog();
     }
 }

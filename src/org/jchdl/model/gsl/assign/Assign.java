@@ -34,6 +34,7 @@ import org.jchdl.model.gsl.core.meta.Node;
 // Node input connects directly to its output can not be translated correctly.
 // Use this Assign node as a replacement.
 public class Assign extends Node {
+
     private Assign(Wire out, Wire in) {
         in(in);
         out(out);
@@ -48,5 +49,13 @@ public class Assign extends Node {
 
     public static Assign inst(Wire out, Wire in) {
         return new Assign(out, in);
+    }
+
+    public static Assign[] inst(Wire[] out, Wire[] in) {
+        Assign[] assigns = new Assign[in.length];
+        for (int i = 0; i < in.length; i++) {
+            assigns[i] = Assign.inst(out[i], in[i]);
+        }
+        return assigns;
     }
 }

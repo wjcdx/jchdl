@@ -29,7 +29,7 @@ package org.jchdl.model.gsl.operator.arithmetic;
 
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.And;
+import org.jchdl.model.gsl.core.gate.ni.atomic.And;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.meta.PropagateManager;
 import org.jchdl.model.gsl.core.value.Value;
@@ -94,6 +94,11 @@ public class Mul extends Node {
         out = sum;
     }
 
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
+    }
+
     public static Mul inst(WireVec out, Wire cout, WireVec in1, WireVec in2) {
         return new Mul(out, cout, in1, in2);
     }
@@ -115,13 +120,7 @@ public class Mul extends Node {
 
         PropagateManager.add(in1, in2);
         PropagateManager.propagateParallel();
-
-        System.out.print("out: ");
-        System.out.print(cout.getValue().toString() + "_");
-        for (int i = out.nBits() - 1; i >= 0; i--) {
-            System.out.print(out.wire(i).getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         Mul.inst(out, cout, in1, in2).toVerilog();
     }

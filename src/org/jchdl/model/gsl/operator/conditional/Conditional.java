@@ -67,6 +67,11 @@ public class Conditional extends Node {
         Mux.inst(out.wires(), in1.wires(), in2.wires(), sel);
     }
 
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
+    }
+
     public static Conditional inst(WireVec out, WireVec in1, WireVec in2, Wire condition) {
         return new Conditional(out, in1, in2, condition);
     }

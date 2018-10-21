@@ -27,11 +27,13 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.operator.concat;
 
+import org.jchdl.model.gsl.assign.Assign;
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.value.Value;
 
+// nBits(out) = nBits(in) * count;
 public class Replicate extends Node {
     private int nBits = 0;
     private int nCount = 0;
@@ -54,10 +56,18 @@ public class Replicate extends Node {
 
     @Override
     public void logic() {
+        WireVec in = new WireVec(inputs());
+        WireVec out = new WireVec(outputs());
         for (int i = 0; i < nCount; i++) {
-            WireVec in = new WireVec(inputs());
-            in.connect(outputs(i * nBits, (i + 1) * nBits));
+            for (int j = 0; j < nBits; j++) {
+                Assign.inst(out.wire(i * nBits + j), in.wire(j));
+            }
         }
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits + "x" + nCount;
     }
 
     public static Replicate inst(WireVec out, WireVec in, int count) {

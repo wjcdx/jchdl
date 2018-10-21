@@ -32,14 +32,17 @@ import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.value.Value;
 
+import java.util.ArrayList;
+
 public class Concat extends Node {
-    private WireVec out;
-    private WireVec in;
+    private ArrayList<Integer> inputBits = new ArrayList<>(8);
 
     public Concat(WireVec out, WireVec in1, WireVec... ins) {
         in(in1.wires());
+        inputBits.add(in1.nBits());
         for (WireVec vec : ins) {
             in(vec.wires());
+            inputBits.add(vec.nBits());
         }
         out(out.wires());
         construct();
@@ -47,11 +50,25 @@ public class Concat extends Node {
 
     @Override
     public void logic() {
-        out = new WireVec(outputs());
-        in  = new WireVec(inputs());
-        for (int i = 0; i < nIn(); i++) {
-            Assign.inst(out.wire(i), in.wire(i));
+        WireVec out = new WireVec(outputs());
+
+        int from = 0;
+        for (Integer n : inputBits) {
+            WireVec in = new WireVec(inputs(from, from + n));
+            for (int i = 0; i < n; i++) {
+                Assign.inst(out.wire(from + i), in.wire(i));
+            }
+            from += n;
         }
+    }
+
+    @Override
+    public String getName() {
+        StringBuilder sb = new StringBuilder(this.getClass().getSimpleName());
+        for (int n : inputBits) {
+            sb.append("_").append(n);
+        }
+        return sb.toString();
     }
 
     public static Concat inst(WireVec out, WireVec in1, WireVec... ins) {
@@ -78,8 +95,7 @@ public class Concat extends Node {
         in2.propagate();
         in3.propagate();
 
-        System.out.print("out: " + out);
-        System.out.println();
+        System.out.println("out: " + out);
 
         Concat.inst(out, in1, in2, in3).toVerilog();
     }

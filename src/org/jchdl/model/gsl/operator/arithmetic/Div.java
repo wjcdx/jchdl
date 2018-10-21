@@ -27,6 +27,7 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.operator.arithmetic;
 
+import org.jchdl.model.gsl.assign.Assign;
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
 import org.jchdl.model.gsl.core.meta.Node;
@@ -44,13 +45,18 @@ import org.jchdl.model.gsl.operator.shift.LogicalLeft;
 public class Div extends Node {
     private int nBits = 0;
 
+    private WireVec in1;
+    private WireVec in2;
+    private WireVec rem;
+    private WireVec out;
+
     // in1 = out * in2 + remainder
-    public Div(WireVec out, WireVec remainder, WireVec in1, WireVec in2) {
+    public Div(WireVec out, WireVec rem, WireVec in1, WireVec in2) {
         nBits = in1.nBits();
         in(in1.wires());
         in(in2.wires());
         out(out.wires());
-        out(remainder.wires());
+        out(rem.wires());
         construct();
     }
 
@@ -58,13 +64,13 @@ public class Div extends Node {
     public void logic() {
         int nDoubleBits = 2 * nBits;
         // 0. pad higher bits.
-        WireVec in1 = new WireVec(inputs(0, nBits));
+        in1 = new WireVec(inputs(0, nBits));
         WireVec pad1 = WireVec.pulledDown(nBits);
         WireVec in1d = new WireVec(nDoubleBits);
         Concat.inst(in1d, in1, pad1);
 
         // 1. pad lower bits.
-        WireVec in2 = new WireVec(inputs(nBits, 2 * nBits));
+        in2 = new WireVec(inputs(nBits, 2 * nBits));
         WireVec pad2 = WireVec.pulledDown(nBits);
         WireVec in2d = new WireVec(nDoubleBits);
         Concat.inst(in2d, pad2, in2);
@@ -95,8 +101,12 @@ public class Div extends Node {
 
             in1d = in1New;
         }
+
         // output out/remainder.
-        in1d.connect(outputs());
+        out = new WireVec(outputs(0, nBits));
+        rem = new WireVec(outputs(nBits, 2 * nBits));
+        Assign.inst(out.wires(), in1d.wires(0, nBits));
+        Assign.inst(rem.wires(), in1d.wires(nBits, 2 * nBits));
     }
 
     public static Div inst(WireVec out, WireVec remainder, WireVec in1, WireVec in2) {
@@ -115,24 +125,25 @@ public class Div extends Node {
                 Value.V1, Value.V1, Value.V1, Value.V1,
                 Value.V1, Value.V0, Value.V0, Value.V0,
         });
+//        in2.assign(new Value[]{
+//                Value.V1, Value.V1, Value.V0, Value.V0,
+//                Value.V0, Value.V0, Value.V0, Value.V0,
+//        });
         in2.assign(new Value[]{
-                Value.V1, Value.V1, Value.V0, Value.V0,
+                Value.V1, Value.V0, Value.V0, Value.V0,
                 Value.V0, Value.V0, Value.V0, Value.V0,
         });
 
         PropagateManager.add(in1, in2);
         PropagateManager.propagateParallel();
 
-        System.out.print("out: ");
-        for (int i = out.nBits() - 1; i >= 0; i--) {
-            System.out.print(out.wire(i).getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
+        System.out.println("rem: " + rem);
 
-        System.out.print("rem: ");
-        for (int i = rem.nBits() - 1; i >= 0; i--) {
-            System.out.print(rem.wire(i).getValue().toString());
-        }
-        System.out.println();
+//        Div.inst(out, rem, in1, in2).toVerilog();
+        int a = -5;
+        int d = -2;
+        System.out.println(a/d);
+        System.out.println(a%d);
     }
 }
