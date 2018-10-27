@@ -29,7 +29,7 @@ package org.jchdl.model.gsl.sequential;
 
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.And;
+import org.jchdl.model.gsl.core.gate.ni.atomic.And;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.meta.PropagateManager;
 import org.jchdl.model.gsl.core.value.Value;
@@ -39,6 +39,10 @@ import org.jchdl.model.gsl.sequential.ff.DFlipFlop;
 public class Counter extends Node {
     private int nBits = 0;
 
+    Wire clk;
+    Wire clr;
+    WireVec out;
+
     public Counter(WireVec out, Wire clk, Wire clr) {
         nBits = out.nBits();
         in(clk);
@@ -47,45 +51,30 @@ public class Counter extends Node {
         construct();
     }
 
-    private void subLogic() {
-        Wire clk = new Wire(in(0));
-        Wire clr = new Wire(in(1));
-
-        Wire qPrev = new Wire(in(0));
-        for (int i = 0; i < nBits; i++) {
-            Wire wAnd = new Wire();
-            Wire q = new Wire();
-            Wire nq = new Wire();
-            And.inst(wAnd, nq, clr);
-
-            Wire clkFinal = new Wire();
-            Mux.inst(clkFinal, clk, qPrev, clr);
-
-            DFlipFlop.inst(q, nq, clkFinal, wAnd);
-            q.connect(out(i));
-            qPrev = q;
-        }
-    }
-
     @Override
     public void logic() {
-        Wire clk = new Wire(in(0));
-        Wire clr = new Wire(in(1));
+        clk = new Wire(in(0));
+        clr = new Wire(in(1));
+        out = new WireVec(outputs());
 
         Wire nqPrev = new Wire(in(0));
         for (int i = 0; i < nBits; i++) {
-            Wire wAnd = new Wire();
-            Wire q = new Wire();
+            Wire q = out.wire(i);
             Wire nq = new Wire();
+            Wire wAnd = new Wire();
             And.inst(wAnd, nq, clr);
 
             Wire clkFinal = new Wire();
             Mux.inst(clkFinal, clk, nqPrev, clr);
 
             DFlipFlop.inst(q, nq, clkFinal, wAnd);
-            q.connect(out(i));
             nqPrev = nq;
         }
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
     }
 
     public static Counter inst(WireVec out, Wire clk, Wire clr) {
@@ -103,30 +92,18 @@ public class Counter extends Node {
         clr.assign(Value.V0);
         PropagateManager.propagateParallel(clr);
         Clock.tick(clk, 1);
-        System.out.print("out: ");
-        for (Wire wire : out.wires()) {
-            System.out.print(wire.getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         System.out.println("\n# clr = 1");
         clr.assign(Value.V1);
         PropagateManager.propagateParallel(clr);
-        System.out.print("out: ");
-        for (Wire wire : out.wires()) {
-            System.out.print(wire.getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         System.out.println("\n# counting...");
         for (;;) {
             Thread.sleep(1000);
             Clock.tick(clk, 1);
-            System.out.print("out: ");
-            for (Wire wire : out.wires()) {
-                System.out.print(wire.getValue().toString());
-            }
-            System.out.println();
+            System.out.println("out: " + out);
         }
     }
 }

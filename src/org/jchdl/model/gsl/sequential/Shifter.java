@@ -27,6 +27,7 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.gsl.sequential;
 
+import org.jchdl.model.gsl.assign.Assign;
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
 import org.jchdl.model.gsl.core.meta.Node;
@@ -35,7 +36,12 @@ import org.jchdl.model.gsl.core.value.Value;
 import org.jchdl.model.gsl.sequential.ff.DFlipFlop;
 
 public class Shifter extends Node {
-    private int nBits = 0;
+    private int nBits;
+
+    Wire clk;
+    Wire dsi;
+    Wire dso;
+    WireVec dpo;
 
     public Shifter(Wire dso, WireVec dpo, Wire clk, Wire dsi) {
         nBits = dpo.nBits();
@@ -48,16 +54,24 @@ public class Shifter extends Node {
 
     @Override
     public void logic() {
-        Wire clk = new Wire(in(0));
-        Wire qPrev = new Wire(in(1));
+        clk = new Wire(in(0));
+        dsi = new Wire(in(1));
+        dpo = new WireVec(outputs(0, nBits));
+        dso = new Wire(out(-1));
+
+        Wire qPrev = dsi;
         for (int i = 0; i < nBits; i++) {
-            Wire q = new Wire();
+            Wire q = dpo.wire(i);
             Wire nq = Wire.toGround();
             DFlipFlop.inst(q, nq, clk, qPrev);
-            q.connect(out(i));
             qPrev = q;
         }
-        qPrev.connect(out(-1));
+        Assign.inst(dso, qPrev);
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
     }
 
     public static Shifter inst(Wire dso, WireVec dpo, Wire clk, Wire dsi) {
@@ -81,25 +95,15 @@ public class Shifter extends Node {
             dsi.assign(value);
             PropagateManager.propagateParallel(dsi);
             Clock.tick(clk, 1);
-
-            System.out.println("dso: " + dso.getValue().toString());
-            System.out.print("dpo: ");
-            for (Wire wire : dpo.wires()) {
-                System.out.print(wire.getValue().toString());
-            }
-            System.out.println();
+            System.out.println("dso: " + dso + " dpo: " + dpo);
         }
 
         System.out.println("\n# free run: ");
         for (Value value : values) {
             Clock.tick(clk, 1);
-
-            System.out.println("dso: " + dso.getValue().toString());
-            System.out.print("dpo: ");
-            for (Wire wire : dpo.wires()) {
-                System.out.print(wire.getValue().toString());
-            }
-            System.out.println();
+            System.out.println("dso: " + dso + " dpo: " + dpo);
         }
+
+        Shifter.inst(dso, dpo, clk, dsi).toVerilog();
     }
 }

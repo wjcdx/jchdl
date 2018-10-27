@@ -28,7 +28,7 @@
 package org.jchdl.model.gsl.sequential.latch;
 
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.Nor;
+import org.jchdl.model.gsl.core.gate.ni.atomic.Nor;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.meta.PropagateManager;
 import org.jchdl.model.gsl.core.value.Value;
@@ -75,8 +75,8 @@ public class SRLatch extends Node {
 
         PropagateManager.propagateParallel(set, reset);
 
-        System.out.println(" q: " + q.getValue().toString());
-        System.out.println("nq: " + nq.getValue().toString());
+        System.out.println(" q: " + q);
+        System.out.println("nq: " + nq);
 
         latch.toVerilog();
     }

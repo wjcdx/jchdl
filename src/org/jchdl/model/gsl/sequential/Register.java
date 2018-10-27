@@ -29,14 +29,14 @@ package org.jchdl.model.gsl.sequential;
 
 import org.jchdl.model.gsl.core.datatype.helper.WireVec;
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.And;
+import org.jchdl.model.gsl.core.gate.ni.atomic.And;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.meta.PropagateManager;
 import org.jchdl.model.gsl.core.value.Value;
 import org.jchdl.model.gsl.sequential.ff.DFlipFlop;
 
 public class Register extends Node {
-    private int nBits = 0;
+    private int nBits;
 
     private WireVec out;
     private WireVec in;
@@ -68,6 +68,11 @@ public class Register extends Node {
         }
     }
 
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName() + "_" + nBits;
+    }
+
     public static Register inst(WireVec out, Wire clk, Wire oe, WireVec in) {
         return new Register(out, clk, oe, in);
     }
@@ -87,40 +92,22 @@ public class Register extends Node {
         });
         PropagateManager.propagateParallel(oe, in1);
         Clock.tick(clk, 1);
-        System.out.print("out: ");
-        for (Wire wire : out.wires()) {
-            System.out.print(wire.getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         Clock.tick(clk, 1);
-        System.out.print("out: ");
-        for (Wire wire : out.wires()) {
-            System.out.print(wire.getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         in1.assign(new Value[] {
                 Value.V0, Value.V0, Value.V1, Value.V1,
                 Value.V1, Value.V0, Value.V1, Value.V1,
         });
         PropagateManager.propagateParallel(in1);
-
         Clock.tick(clk, 1);
-        System.out.print("out: ");
-        for (Wire wire : out.wires()) {
-            System.out.print(wire.getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         oe.assign(Value.V0);
         PropagateManager.propagateParallel(oe);
-
-        System.out.print("out: ");
-        for (Wire wire : out.wires()) {
-            System.out.print(wire.getValue().toString());
-        }
-        System.out.println();
+        System.out.println("out: " + out);
 
         Register.inst(out, clk, oe, in1).toVerilog();
     }

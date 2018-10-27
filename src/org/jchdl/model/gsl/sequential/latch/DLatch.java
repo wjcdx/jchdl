@@ -28,8 +28,8 @@
 package org.jchdl.model.gsl.sequential.latch;
 
 import org.jchdl.model.gsl.core.datatype.net.Wire;
-import org.jchdl.model.gsl.core.gate.ni.And;
-import org.jchdl.model.gsl.core.gate.ni.Nor;
+import org.jchdl.model.gsl.core.gate.ni.atomic.And;
+import org.jchdl.model.gsl.core.gate.ni.atomic.Nor;
 import org.jchdl.model.gsl.core.gate.no.Not;
 import org.jchdl.model.gsl.core.meta.Node;
 import org.jchdl.model.gsl.core.meta.PropagateManager;
@@ -85,22 +85,19 @@ public class DLatch extends Node {
         e.assign(Value.V1);
         d.assign(Value.V0);
         PropagateManager.propagateParallel(e, d);
-        System.out.println(" q: " + q.getValue().toString());
-        System.out.println("nq: " + nq.getValue().toString());
+        System.out.println("e: " + e + " d: " + d +  " q: " + q + " nq: " + nq);
 
         // trial 2:
         e.assign(Value.V0);
         d.assign(Value.V1);
         PropagateManager.propagateParallel(e, d);
-        System.out.println(" q: " + q.getValue().toString());
-        System.out.println("nq: " + nq.getValue().toString());
+        System.out.println("e: " + e + " d: " + d +  " q: " + q + " nq: " + nq);
 
         // trial 3:
         e.assign(Value.V1);
         d.assign(Value.V1);
         PropagateManager.propagateParallel(e, d);
-        System.out.println(" q: " + q.getValue().toString());
-        System.out.println("nq: " + nq.getValue().toString());
+        System.out.println("e: " + e + " d: " + d +  " q: " + q + " nq: " + nq);
 
         node.toVerilog();
     }
