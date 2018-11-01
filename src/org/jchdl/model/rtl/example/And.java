@@ -44,7 +44,7 @@ public class And extends Module {
     @Output
     private Bit r;
 
-    public And(Module parent, @Output Bit r, @Input Bit a, @Input Bit b) {
+    public And(Module parent, Bit r, Bit a, Bit b) {
         super(parent);
         this.a = a;
         this.b = b;
@@ -61,7 +61,7 @@ public class And extends Module {
         assign(r).from(a, b).with(this::assignR);
     }
 
-    public static And inst(Module parent, @Output Bit r, @Input Bit a, @Input Bit b) {
+    public static And inst(Module parent, Bit r, Bit a, Bit b) {
         return new And(parent, r, a, b);
     }
 
