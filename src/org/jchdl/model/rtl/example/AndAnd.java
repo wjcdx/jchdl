@@ -46,7 +46,7 @@ public class AndAnd extends Module {
     @Output
     private Bit r;
 
-    public AndAnd(Module parent, @Output Bit r, @Input Bit a, @Input Bit b, @Input Bit c) {
+    public AndAnd(Module parent, Bit r, Bit a, Bit b, Bit c) {
         super(parent);
         this.a = a;
         this.b = b;
@@ -62,7 +62,7 @@ public class AndAnd extends Module {
         And.inst(this, r, ab, c);
     }
 
-    public static AndAnd inst(Module parent, @Output Bit r, @Input Bit a, @Input Bit b, @Input Bit c) {
+    public static AndAnd inst(Module parent, Bit r, Bit a, Bit b, Bit c) {
         return new AndAnd(parent, r, a, b, c);
     }
 
@@ -92,5 +92,7 @@ public class AndAnd extends Module {
         a.assign(Bit.BIT_1);
         PropagateManager.propagate(aa);
         System.out.println("out: " + r.toString());
+
+        aa.toVerilog();
     }
 }

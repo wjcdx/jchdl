@@ -27,9 +27,9 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 package org.jchdl.model.rtl.example;
 
+import org.jchdl.model.rtl.core.datatype.Bit;
 import org.jchdl.model.rtl.core.datatype.Bits;
 import org.jchdl.model.rtl.core.datatype.Reg;
-import org.jchdl.model.rtl.core.datatype.Bit;
 import org.jchdl.model.rtl.core.event.ChangingEvent;
 import org.jchdl.model.rtl.core.io.annotation.Input;
 import org.jchdl.model.rtl.core.io.annotation.Output;
@@ -65,7 +65,6 @@ public class AndReg extends Module {
         Bits b = new Bits(8, Bit.BIT_0);
         Reg r = new Reg(8);
         Module module = new AndReg(null, r, a, b);
-        module.toVerilog();
 
         PropagateManager.propagate(module);
         System.out.println("out: " + r);
@@ -77,5 +76,7 @@ public class AndReg extends Module {
         b.bit(0).assign(Bit.BIT_1);
         PropagateManager.propagate(module);
         System.out.println("out: " + r);
+
+        module.toVerilog();
     }
 }
