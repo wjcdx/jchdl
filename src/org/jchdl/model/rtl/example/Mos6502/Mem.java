@@ -47,11 +47,11 @@ public class Mem extends Module {
     @Range(msb = 15, lsb = 0)
     Bits AB;
     @Input
-    @Range(msb = 8, lsb = 0)
+    @Range(msb = 7, lsb = 0)
     Bits DI;
 
     @Output
-    @Range(msb = 8, lsb = 0)
+    @Range(msb = 7, lsb = 0)
     Reg DO;
 
     public Mem(Module parent, Bit clk, Bit WE, Bits AB, Bits DI, Reg DO) {
