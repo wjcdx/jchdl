@@ -295,6 +295,8 @@ public class RtlInterpreter extends Interpreter<RtlValue> implements Opcodes {
                         v.nBits = rtlModule.getFieldWidth(fin.name);
                     } else if (Structure.class.isAssignableFrom(clazz)) {
                         v = new RtlValue(Type.getType(fin.desc), RtlStructure.PREFIX + fin.name);
+                    } else {
+                        v = new RtlValue(Type.getType(fin.desc), fin.name);
                     }
                 } else if (Bit.class.isAssignableFrom(ownerClass)) {
                     if (fin.name.equals("value")) {
